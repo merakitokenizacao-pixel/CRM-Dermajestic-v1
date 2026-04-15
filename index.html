@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DermajestiC CRM</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Jost:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+
+<body>
+  <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+  <div class="layout">
+
+    <!-- ── SIDEBAR ── -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-logo">
+        <div class="logo-eyebrow">Clínica Estética</div>
+        <div class="logo-mark">Derma<em>jestiC</em></div>
+        <div class="logo-sub">Painel de gestão</div>
+      </div>
+      <span class="nav-section">Principal</span>
+      <div class="nav-item active" onclick="showPage('dashboard', this)">
+        <span class="nav-icon">&#9671;</span> Dashboard
+      </div>
+      <div class="nav-item" onclick="showPage('leads', this)">
+        <span class="nav-icon">&#9673;</span> Leads
+        <span class="nav-badge" id="leads-count-badge" style="display:none">0</span>
+      </div>
+      <div class="nav-item" onclick="showPage('conversas', this)">
+        <span class="nav-icon">&#9678;</span> Conversas
+      </div>
+      <div class="nav-item" onclick="showPage('agendamentos', this)">
+        <span class="nav-icon">&#9719;</span> Agendamentos
+      </div>
+      <div class="nav-item" onclick="showPage('followup', this)">
+        <span class="nav-icon">&#8634;</span> Follow-up
+      </div>
+      <div class="sidebar-footer">
+        <div class="sidebar-status-dot"></div>
+        <span class="sidebar-status-text">Laura ativa</span>
+      </div>
+    </aside>
+
+    <!-- ── MAIN ── -->
+    <main class="main">
+      <div class="topbar">
+        <div class="topbar-left">
+          <button class="hamburger" onclick="toggleSidebar()">&#9776;</button>
+          <span class="topbar-title" id="page-title">Dashboard</span>
+        </div>
+        <div class="topbar-right">
+          <span class="topbar-date" id="current-date"></span>
+          <button class="theme-toggle" onclick="toggleTheme()" title="Alternar tema">&#9789;</button>
+        </div>
+      </div>
+
+      <div class="content">
+
+        <!-- ══ DASHBOARD ══ -->
+        <div class="page active" id="page-dashboard">
+          <div class="dash-header">
+            <div>
+              <div class="dash-greeting" id="dash-greeting">Bom dia</div>
+              <div class="dash-subtitle">Visão geral · DermajestiC</div>
+            </div>
+            <div class="filter-bar" id="dash-filter-btns">
+              <button class="filter-btn active" onclick="setDashFilter('hoje', this)">Hoje</button>
+              <button class="filter-btn" onclick="setDashFilter('ontem', this)">Ontem</button>
+              <button class="filter-btn" onclick="setDashFilter('semana', this)">Semana</button>
+              <button class="filter-btn" onclick="setDashFilter('mes', this)">Mês</button>
+              <button class="filter-btn" onclick="setDashFilter('tudo', this)">Tudo</button>
+            </div>
+          </div>
+
+          <div class="metrics-grid" id="metrics-grid">
+            <div class="loading"><div class="spinner"></div></div>
+          </div>
+
+          <div class="section-grid">
+            <div class="card">
+              <div class="card-header">
+                <span class="card-title">Leads recentes</span>
+                <span class="card-action" onclick="showPage('leads', document.querySelector('[onclick*=leads]'))">Ver todos &rarr;</span>
+              </div>
+              <div id="recent-leads"><div class="loading"><div class="spinner"></div></div></div>
+            </div>
+            <div class="card">
+              <div class="card-header"><span class="card-title">Funil de conversão</span></div>
+              <div id="funnel-chart"><div class="loading"><div class="spinner"></div></div></div>
+            </div>
+          </div>
+
+          <div class="charts-grid">
+            <div class="card">
+              <div class="card-header"><span class="card-title">Serviços mais agendados</span></div>
+              <div class="chart-container"><canvas id="services-canvas"></canvas></div>
+            </div>
+            <div class="card">
+              <div class="card-header"><span class="card-title">Novos leads por dia</span></div>
+              <div class="chart-container"><canvas id="leads-timeline-canvas"></canvas></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ══ LEADS ══ -->
+        <div class="page" id="page-leads">
+          <div style="display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap;align-items:center">
+            <div class="search-bar" style="flex:1;min-width:200px">
+              <span style="color:var(--muted);font-size:15px;">&#8981;</span>
+              <input type="text" id="search-input" placeholder="Buscar por nome ou telefone..." oninput="filterLeads()">
+            </div>
+            <div class="filter-bar" id="leads-filter-btns">
+              <button class="filter-btn active" onclick="setLeadsFilter('hoje', this)">Hoje</button>
+              <button class="filter-btn" onclick="setLeadsFilter('ontem', this)">Ontem</button>
+              <button class="filter-btn" onclick="setLeadsFilter('semana', this)">Semana</button>
+              <button class="filter-btn" onclick="setLeadsFilter('mes', this)">Mês</button>
+              <button class="filter-btn" onclick="setLeadsFilter('tudo', this)">Tudo</button>
+            </div>
+          </div>
+          <div class="card">
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr><th>Lead</th><th>Telefone</th><th>Canal</th><th>Status</th><th>Desde</th></tr>
+                </thead>
+                <tbody id="leads-table-body">
+                  <tr><td colspan="5"><div class="loading"><div class="spinner"></div> Carregando...</div></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- ══ CONVERSAS ══ -->
+        <div class="page" id="page-conversas">
+          <div class="conversa-layout">
+            <div class="conversa-sidebar">
+              <div class="conversa-sidebar-header">
+                <div class="conversa-sidebar-title">Conversas</div>
+                <input type="text" class="conversa-sidebar-search" placeholder="Buscar..." oninput="filterConversaLeads(this.value)">
+              </div>
+              <div class="conversa-sidebar-list" id="conversa-leads-list">
+                <div class="loading"><div class="spinner"></div></div>
+              </div>
+            </div>
+            <div class="conversa-chat">
+              <div class="conversa-chat-header" id="conversa-chat-header">
+                <span class="conversa-chat-name" id="conversa-lead-name" style="color:var(--muted)">Selecione um lead</span>
+              </div>
+              <div class="conversa-chat-messages" id="conversa-messages">
+                <div class="empty"><span class="empty-icon">&#128172;</span>Selecione um lead para ver o histórico</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ══ AGENDAMENTOS ══ -->
+        <div class="page" id="page-agendamentos">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;flex-wrap:wrap;gap:10px">
+            <div class="filter-bar">
+              <button class="filter-btn active" onclick="filterAgendamentos('todos', this)">Todos</button>
+              <button class="filter-btn" onclick="filterAgendamentos('pendente', this)">Pendentes</button>
+              <button class="filter-btn" onclick="filterAgendamentos('confirmado', this)">Confirmados</button>
+              <button class="filter-btn" onclick="filterAgendamentos('realizado', this)">Realizados</button>
+              <button class="filter-btn" onclick="filterAgendamentos('cancelado', this)">Cancelados</button>
+            </div>
+            <button class="btn-primary" onclick="openNewAgendamento()">+ Novo agendamento</button>
+          </div>
+
+          <div class="metrics-grid" id="agend-metrics" style="margin-bottom:1.25rem">
+            <div class="loading"><div class="spinner"></div></div>
+          </div>
+
+          <div class="card" style="margin-bottom:1.25rem;padding:1rem">
+            <div class="card-header" style="margin-bottom:0.75rem">
+              <span class="card-title">Quadro de agendamentos</span>
+            </div>
+            <div class="kanban-container" id="kanban-board"></div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.4fr);gap:14px">
+            <div class="card">
+              <div class="card-header">
+                <span class="card-title">Calendário</span>
+                <span id="selected-day-label" style="font-size:11px;color:var(--muted);font-weight:500"></span>
+              </div>
+              <div id="mini-calendar"><div class="loading"><div class="spinner"></div></div></div>
+              <div style="margin-top:1rem" id="day-agendamentos">
+                <div class="empty" style="padding:1rem 0">Selecione um dia</div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-header">
+                <span class="card-title" id="agend-list-title">Todos os agendamentos</span>
+              </div>
+              <div class="filter-bar" id="agend-date-filter-btns" style="margin-bottom:1rem">
+                <button class="filter-btn active" onclick="setAgendDateFilter('hoje', this)">Hoje</button>
+                <button class="filter-btn" onclick="setAgendDateFilter('ontem', this)">Ontem</button>
+                <button class="filter-btn" onclick="setAgendDateFilter('semana', this)">Semana</button>
+                <button class="filter-btn" onclick="setAgendDateFilter('mes', this)">Mês</button>
+                <button class="filter-btn" onclick="setAgendDateFilter('tudo', this)">Tudo</button>
+              </div>
+              <div id="agend-list"><div class="loading"><div class="spinner"></div></div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ══ MODAL NOVO AGENDAMENTO ══ -->
+        <div class="modal-overlay" id="modal-agend" onclick="closeAgendModal(event)">
+          <div class="modal" style="width:460px">
+            <button class="modal-close" onclick="document.getElementById('modal-agend').classList.remove('open')">&times;</button>
+            <div style="font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:300;margin-bottom:1.25rem;letter-spacing:0.02em">Novo agendamento</div>
+            <div style="display:flex;flex-direction:column;gap:12px">
+              <div>
+                <label class="form-label">Lead</label>
+                <select id="agend-lead-select" class="form-input"><option value="">Selecione um lead...</option></select>
+              </div>
+              <div>
+                <label class="form-label">Serviço</label>
+                <select id="agend-servico" class="form-input">
+                  <option value="">Selecione o serviço...</option>
+                  <option>Limpeza de pele</option>
+                  <option>Botox</option>
+                  <option>Peeling</option>
+                  <option>Drenagem linfática</option>
+                  <option>Preenchimento</option>
+                  <option>Microagulhamento</option>
+                  <option>Depilação a laser</option>
+                  <option>Outro</option>
+                </select>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+                <div><label class="form-label">Data</label><input type="date" id="agend-data" class="form-input"></div>
+                <div><label class="form-label">Horário</label><input type="time" id="agend-hora" class="form-input"></div>
+              </div>
+              <div>
+                <label class="form-label">Status</label>
+                <select id="agend-status" class="form-input">
+                  <option value="pendente">Pendente</option>
+                  <option value="confirmado">Confirmado</option>
+                </select>
+              </div>
+              <button class="btn-primary" style="margin-top:4px" onclick="salvarAgendamento()">Salvar agendamento</button>
+              <div id="agend-msg" style="font-size:12px;text-align:center;min-height:16px"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ══ FOLLOW-UP ══ -->
+        <div class="page" id="page-followup">
+          <div class="metrics-grid" id="followup-metrics" style="margin-bottom:1.5rem"></div>
+          <div class="card" style="padding:1rem;overflow:hidden">
+            <div id="followup-cards"></div>
+          </div>
+        </div>
+
+      </div><!-- /content -->
+    </main>
+  </div><!-- /layout -->
+
+  <!-- ══ MODAL GENÉRICO ══ -->
+  <div class="modal-overlay" id="modal" onclick="closeModal(event)">
+    <div class="modal">
+      <button class="modal-close" onclick="document.getElementById('modal').classList.remove('open')">&times;</button>
+      <div id="modal-content"></div>
+    </div>
+  </div>
+
+  <!-- ══ TOAST ══ -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- ══ BOTTOM NAV MOBILE ══ -->
+  <nav class="bottom-nav">
+    <div class="bottom-nav-inner">
+      <div class="bottom-nav-item active" id="bn-dashboard" onclick="showPageMobile('dashboard')">
+        <span class="bn-icon">&#9671;</span><span>Dashboard</span>
+      </div>
+      <div class="bottom-nav-item" id="bn-leads" onclick="showPageMobile('leads')">
+        <span class="bn-icon">&#9673;</span><span>Leads</span>
+      </div>
+      <div class="bottom-nav-item" id="bn-agendamentos" onclick="showPageMobile('agendamentos')">
+        <span class="bn-icon">&#9719;</span><span>Agenda</span>
+      </div>
+      <div class="bottom-nav-item" id="bn-followup" onclick="showPageMobile('followup')">
+        <span class="bn-icon">&#8634;</span><span>Follow-up</span>
+      </div>
+      <div class="bottom-nav-item" id="bn-conversas" onclick="showPageMobile('conversas')">
+        <span class="bn-icon">&#9678;</span><span>Conversas</span>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ══ SCRIPTS ══ -->
+  <script src="js/config.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/dashboard.js"></script>
+  <script src="js/leads.js"></script>
+  <script src="js/conversas.js"></script>
+  <script src="js/agendamentos.js"></script>
+  <script src="js/followup.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
