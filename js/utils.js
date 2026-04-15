@@ -36,15 +36,26 @@ function getAvatarColors(name) {
   return avatarPalette[(name || '?').charCodeAt(0) % avatarPalette.length];
 }
 
+// Chamada pelo onerror da <img> para substituir pela inicial quando a foto falha
+function _avatarFallback(el, nome, size, fontSize, extra) {
+  const [bg, fg] = getAvatarColors(nome || '?');
+  const div = document.createElement('div');
+  div.className = 'avatar';
+  div.style.cssText = `background:${bg}22;color:${fg};width:${size}px;height:${size}px;font-size:${fontSize}px;flex-shrink:0;${extra}`;
+  div.textContent = getInitials(nome);
+  el.parentNode.replaceChild(div, el);
+}
+
 function renderAvatar(nome, fotoUrl, size = 36, fontSize = 11, extra = '') {
   const [bg, fg] = getAvatarColors(nome || '?');
-  const initials = getInitials(nome);
-  const fallback = `<div class="avatar" style="background:${bg}22;color:${fg};width:${size}px;height:${size}px;font-size:${fontSize}px;flex-shrink:0;${extra}">${initials}</div>`;
+  const initials  = getInitials(nome);
 
   if (fotoUrl && fotoUrl !== '=' && fotoUrl !== 'null' && fotoUrl !== 'undefined') {
-    return `<img src="${fotoUrl}" alt="${nome}" style="width:${size}px;height:${size}px;border-radius:50%;object-fit:cover;flex-shrink:0;${extra}" onerror="this.outerHTML='${fallback}'">`;
+    const safeName = (nome || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+    return `<img src="${fotoUrl}" alt="${safeName}" style="width:${size}px;height:${size}px;border-radius:50%;object-fit:cover;flex-shrink:0;${extra}" onerror="_avatarFallback(this,'${safeName}',${size},${fontSize},'${extra}')">`;
   }
-  return fallback;
+
+  return `<div class="avatar" style="background:${bg}22;color:${fg};width:${size}px;height:${size}px;font-size:${fontSize}px;flex-shrink:0;${extra}">${initials}</div>`;
 }
 
 // ── Formatações ──
